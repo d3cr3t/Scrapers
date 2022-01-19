@@ -25,7 +25,7 @@ Current chunks are:<br>
 ["1abc", "defgh", "ijklmn", "opqrst", "uvwxyz"]
 
 
-##### results
+#### results
 
 A list of files will be created in the **./whakoom/data** folder in JSON format: indexes, serie indexes and issue details.
 
