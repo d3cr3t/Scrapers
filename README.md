@@ -7,7 +7,7 @@ In this case, is better to save links into files and then process them with a de
 
 Included in this repo:
 
-scrap_whakoom.py    Process comic issues from Whakoom site. A huge collection with single issues and series. All of then are processed by this script.
-                    Output files include general index, series details and issues details. All of them for each initial letter to leverage the files
-                    weight.
+scrap_whakoom_home.py
+  Process comic issues from Whakoom site. A huge collection with single issues and series. All of then are processed by this script.
+  Output files include general index, series details and issues details. All of them for each initial letter to leverage the files weight.
 
