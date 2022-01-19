@@ -5,7 +5,6 @@
 
 
 from bs4 import BeautifulSoup as bs
-from requests_html import HTMLSession
 import requests
 import re
 import os
@@ -26,8 +25,10 @@ config = {
         "letters": "https://www.whakoom.com/explore/whole_catalog/start_with_"
         },
     "url_page_suffix": "?page=",
-    "url_letters_all": ['1', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'],
-    "url_letters": ['p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'],
+    "_url_letters_all": ['1', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'],
+    "_url_letters": ['p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'],
+    "url_letters_all": "1abcdefghijklmnopqrstuvwxyz",
+    "url_letters": ["1abc", "defgh", "ijklmn", "opqrst", "uvwxyz"]
     "json_path_prefix": pathlib.Path.home() / "whakoom/data/",
     "json_prefix": "json_",
     "json_suffix": ".json",
@@ -39,8 +40,6 @@ config = {
  }
 
 dict_issues_by_letter = {}
-
-session = requests.Session()
 
 def check_args():
     global fase
