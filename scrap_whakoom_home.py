@@ -25,10 +25,8 @@ config = {
         "letters": "https://www.whakoom.com/explore/whole_catalog/start_with_"
         },
     "url_page_suffix": "?page=",
-    "_url_letters_all": ['1', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'],
-    "_url_letters": ['p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'],
     "url_letters_all": "1abcdefghijklmnopqrstuvwxyz",
-    "url_letters": ["1abc", "defgh", "ijklmn", "opqrst", "uvwxyz"]
+    "url_letters": ["1abc", "defgh", "ijklmn", "opqrst", "uvwxyz"],
     "json_path_prefix": pathlib.Path.home() / "whakoom/data/",
     "json_prefix": "json_",
     "json_suffix": ".json",
@@ -43,14 +41,22 @@ dict_issues_by_letter = {}
 
 def check_args():
     global fase
+    global thread
 
     # Args
     parser = ArgumentParser()
 
     parser.add_argument("-f", "--fase", dest="fase", default=0, help="fase 0: init, fase 1: details")
+    parser.add_argument("-t", "--thread", dest="thread", default=0, type=int, help="0: complete, 1-5: sector to process (from 1 to c...)")
 
     args = parser.parse_args()
     fase = int(args.fase)
+    if args.thread <0 or args.thread>5:
+        print("ERR", "-t parameter must be 0 to 5.")
+        sys.exit(1)
+    else:
+        thread = args.thread
+    
 
     if fase <0 or fase>1:
         print("ERR: fase must be a value between 0 and 1.")
@@ -168,10 +174,13 @@ def read_index_page(letter, path):
 
 def read_number_page():
     global config
+    global thread
 
-    for letter in config["url_letters"]:
+    letters_chunk = config["url_letters_all"] if thread==0 else config["url_letters"][thread-1]
+
+    for letter in letters_chunk:
         path = create_csv("index", letter)
-        read_index_page(config, letter, path)
+        read_index_page(letter, path)
 
 def get_index_data():
 
@@ -423,8 +432,11 @@ def read_serie_or_unique_page(letter, path):
 
 def read_series_and_orphans_pages():
     global config
+    global thread
 
-    for letter in config["url_letters"]:
+    letters_chunk = config["url_letters_all"] if thread==0 else config["url_letters"][thread-1]
+
+    for letter in letters_chunk:
         path = create_csv("series", letter)
         i_path = create_csv("issues", letter)
         read_serie_or_unique_page(letter, path)
