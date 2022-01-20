@@ -16,10 +16,12 @@ Output files include general index, series details and issues details. All of th
 
 | option | value | description |    
 |--------|-------|-------------|
-| -f, --fase | 0, 1 | fase to process, 0 for index pages, 1 for series/issues pages |
-| -t, --thread | 0-5 | 0 indicates processing complete list, 1-5 only process a chunk |
+| -f, --fase | 0, 1, 2 | fase to process, 0 for index pages, 1 for series/issues pages, 2 for image links(1) |
+| -t, --thread | 0-5 | 0 indicates processing complete list, 1-5 only process a chunk(2) |
 
-*chunk represents a portion of letters string from 1 to z. This way is possible to launch till 5 process alltogether (in separate terminal sessions).
+(1) prior to fase 2 must bet executed fase 1, and this one after fase 0.
+
+(2) chunk represents a portion of letters string from 1 to z. This way is possible to launch till 5 process alltogether (in separate terminal sessions).
 
 Current chunks are:<br>
 ["1abc", "defgh", "ijklmn", "opqrst", "uvwxyz"]

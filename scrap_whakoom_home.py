@@ -34,6 +34,12 @@ config = {
         "index": "index_",
         "issues": "issues_",
         "series": "series_",
+    },
+    "link_path_prefix": pathlib.Path.home() / "whakoom/links/",
+    "link_prefix": "link_",
+    "link_suffix": ".txt",
+    "link_files": {
+        "images": "images_"
     }
  }
 
@@ -46,7 +52,7 @@ def check_args():
     # Args
     parser = ArgumentParser()
 
-    parser.add_argument("-f", "--fase", dest="fase", default=0, help="fase 0: init, fase 1: details")
+    parser.add_argument("-f", "--fase", dest="fase", default=0, help="fase 0: init, fase 1: details, fase 2: image links")
     parser.add_argument("-t", "--thread", dest="thread", default=0, type=int, help="0: complete, 1-5: sector to process (from 1 to c...)")
 
     args = parser.parse_args()
@@ -58,7 +64,7 @@ def check_args():
         thread = args.thread
     
 
-    if fase <0 or fase>1:
+    if fase <0 or fase>2:
         print("ERR: fase must be a value between 0 and 1.")
         sys.exit(1)
 
@@ -84,6 +90,17 @@ def create_csv(file, letter):
         print("ERR: Cannot create an instance of file path!", path)
         sys.exit(1)
 
+def create_link(file, letter):
+    global config
+
+    try:
+        path = config["link_path_prefix"] / (config["link_prefix"] + config["link_files"][file] + str(letter).strip() + config["link_suffix"])
+        print(path)
+        path.touch()
+        return path    
+    except:
+        print("ERR: Cannot create an instance of file path!", path)
+        sys.exit(1)
 
 def read_index_page(letter, path):
     global config
@@ -441,6 +458,40 @@ def read_series_and_orphans_pages():
         i_path = create_csv("issues", letter)
         read_serie_or_unique_page(letter, path)
 
+
+def read_issues_links(letter, path):
+    global config
+
+    in_path = config["json_path_prefix"] / (config["json_prefix"] + config["json_files"]["issues"] + str(letter).strip() + config["json_suffix"])
+     
+    pprint.pprint(in_path)
+
+    out_path = path
+
+    pprint.pprint(out_path)
+
+    with in_path.open(mode="r") as file:
+        dict_data = json.loads(file.read())
+ 
+    file.close()
+
+    with out_path.open(mode="w") as file:
+        for d in dict_data:
+            tmp_link = dict_data[d]["image_large"]
+            if tmp_link>'':
+                file.write(tmp_link+"\n")
+    
+    file.close()
+
+def extract_image_links():
+    global config
+
+    letters_chunk = config["url_letters_all"] if thread==0 else config["url_letters"][thread-1]
+
+    for letter in letters_chunk:
+        path = create_link("images", letter)
+        read_issues_links(letter, path)
+
 def main():
     global config
     global fase
@@ -459,6 +510,9 @@ def main():
         get_index_data()
     if fase == 1:
         read_series_and_orphans_pages()
+    if fase == 2:
+        extract_image_links()
+
 
 
 if __name__ == "__main__":
