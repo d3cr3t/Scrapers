@@ -31,3 +31,5 @@ Current chunks are:<br>
 
 A list of files will be created in the **./whakoom/data** folder in JSON format: indexes, serie indexes and issue details.
 
+In the folder images and images_reduced thru aria and imagemagick processes, images will be stored.
+
