@@ -146,6 +146,7 @@ def read_index_page(sector, path):
                     dict_data[n_key] = {
                         "id": n_key,
                         "game_system": game_system,
+                        "game_system_normalized": game_system.replace(" ", "_").lower(),
                         "game_system_link": game_system_link,
                         "recent_version": recent_version,
                         "sector": n_sector
@@ -163,7 +164,7 @@ def get_index_data():
     path = create_csv("index")
     read_index_page("index", path)
 
-def get_detail_issue(url_issue, edition_type='', about_this_edition='', story='', id_serie=''):
+def _get_detail_issue(url_issue, edition_type='', about_this_edition='', story='', id_serie=''):
     global config
     global dict_issues_by_platform
 
@@ -246,32 +247,6 @@ def get_detail_issue(url_issue, edition_type='', about_this_edition='', story=''
                 if "€" in tmp_price:
                     price = tmp_price
         
-        print(f"""
-          id_issue: {id_issue}
-          id_serie: {id_serie}
-     title_in_full: {title_in_full} | {issue_in_serie}
--------------------------------------
-                """)
-
-        '''        
-
-        print(f"""
-          id_issue: {id_issue}
-          id_serie: {id_serie}
-     title_in_full: {title_in_full} | {issue_in_serie}
-       image_large: {image_large}
-    binding_format: {binding_format}
-       in_language: {in_language}
-         publisher: {publisher}
-about_this_edition: {about_this_edition}
-             story: {story}
-     authors_tasks: {authors_tasks}
-    date_published: {date_published}
-              isbn: {isbn}
-             price: {price}
--------------------------------------
-                """)
-        '''
 
         dict_issues_by_platform[id_issue] = {
             "id_issue": id_issue,
@@ -291,7 +266,7 @@ about_this_edition: {about_this_edition}
         }
 
 
-def get_series_issues(dict):
+def _get_series_issues(dict):
     global config
     global records_processed
 
@@ -364,8 +339,6 @@ def read_platforms_index():
     dict_data = {}
 
     in_path = config["json_path_prefix"] / (config["json_prefix"] + config["json_files"]["index"] + config["json_suffix"])
-     
-    pprint.pprint(in_path)
 
     with in_path.open(mode="r") as file:
         dict_data = json.loads(file.read())
@@ -396,17 +369,16 @@ def read_platforms_index():
                     except:
                         pass
             print("Max page", max_page)
-            read_issues_links(dict_data[i], max_page)
+            read_games_lists(dict_data[i], max_page)
 
 
-def read_issues_links(dict, max_page):
+def read_games_lists(dict, max_page):
     global config
-
 
     dict_data = {}
     n_issue = 1
 
-    out_path = config["json_path_prefix"] / (config["json_prefix"] + config["json_files"]["issues"] + dict["game_system"] + config["json_suffix"])
+    out_path = config["json_path_prefix"] / (config["json_prefix"] + config["json_files"]["issues"] + dict["game_system_normalized"] + config["json_suffix"])
 
     #pprint.pprint(out_path)
 
@@ -443,7 +415,6 @@ def read_issues_links(dict, max_page):
             bsObj = bs(html, "lxml")
             for level1 in bsObj.findAll("div", {"class": "media-body"}):
                 for level2 in level1.findAll("a"):
-                    print("link found")
                     game_link = level2.attrs["href"]
                     dict_data[n_issue] = {"id_issue": n_issue, "issue_link": game_link, "game_system": dict["game_system"]}
                     n_issue = n_issue+1
@@ -455,14 +426,14 @@ def read_issues_links(dict, max_page):
         json.dump(dict_data, file)
     file.close()
 
-def extract_image_links():
+def _extract_image_links():
     global config
 
     letters_chunk = config["url_letters_all"] if thread==0 else config["url_letters"][thread-1]
 
     for letter in letters_chunk:
         path = create_link("images", letter)
-        read_issues_links(letter, path)
+        read_games_lists(letter, path)
 
 def main():
     global config
