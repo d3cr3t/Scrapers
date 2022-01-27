@@ -101,6 +101,13 @@ def create_link(file, letter):
         print("ERR: Cannot create an instance of file path!", path)
         sys.exit(1)
 
+def normalize(str):
+    tmp = str.lower()
+
+    result = ''.join([c if (ord(c) >= 48 and ord(c) <= 57) or (ord(c) >= 97 and ord(c) <= 122) else '_' for c in tmp])
+
+    return result
+
 def read_index_page(sector, path):
     global config
 
@@ -146,7 +153,7 @@ def read_index_page(sector, path):
                     dict_data[n_key] = {
                         "id": n_key,
                         "game_system": game_system,
-                        "game_system_normalized": game_system.replace(" ", "_").lower(),
+                        "game_system_normalized": normalize(game_system),
                         "game_system_link": game_system_link,
                         "recent_version": recent_version,
                         "sector": n_sector
@@ -378,7 +385,7 @@ def read_games_lists(dict, max_page):
     dict_data = {}
     n_issue = 1
 
-    out_path = config["json_path_prefix"] / (config["json_prefix"] + config["json_files"]["issues"] + dict["game_system_normalized"] + config["json_suffix"])
+    out_path = config["json_path_prefix"] / (config["json_prefix"] + config["json_files"]["issues"] + str(dict["id"]).strip() + "_" + dict["game_system_normalized"] + config["json_suffix"])
 
     #pprint.pprint(out_path)
 
