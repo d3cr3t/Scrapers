@@ -426,8 +426,6 @@ def read_games_lists(dict, max_page):
                     dict_data[n_issue] = {"id_issue": n_issue, "issue_link": game_link, "game_system": dict["game_system"]}
                     n_issue = n_issue+1
     
-
-    #pprint.pprint(dict_data)
     print("SAVING...", out_path)
     with out_path.open(mode="w", encoding="utf-8") as file:
         json.dump(dict_data, file)
@@ -461,6 +459,8 @@ def main():
     if fase == 1:
         read_platforms_index()
     if fase == 2:
+        read_issues_links()
+    if fase == 3:
         extract_image_links()
 
 
