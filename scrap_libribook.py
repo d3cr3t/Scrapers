@@ -35,7 +35,8 @@ config = {
     "link_prefix": "link_",
     "link_suffix": ".txt",
     "link_files": {
-        "images": "images_"
+        "images": "images_",
+        "links": "links_"
     }
  }
 
@@ -86,11 +87,11 @@ def create_csv(file):
         print("ERR: Cannot create an instance of file path!", path)
         sys.exit(1)
 
-def create_link(file, letter):
+def create_link(file):
     global config
 
     try:
-        path = config["link_path_prefix"] / (config["link_prefix"] + config["link_files"][file] + str(letter).strip() + config["link_suffix"])
+        path = config["link_path_prefix"] / (config["link_prefix"] + config["link_files"][file] + config["link_suffix"])
         print(path)
         path.touch()
         return path    
@@ -132,7 +133,19 @@ def read_index_page(path):
         print(url_page)
         print("-" * 80)
         
-        r = requests.get(url, params={'page':str(i).strip()})
+        retry = True
+        n_tries = 0
+
+        while retry is True:
+            try:
+                r = requests.get(url, params={'page':str(i).strip()})
+                retry = False
+            except:
+                print(f"ERROR GETTING URL. Retry {n_tries}")
+                if n_tries < 10:
+                    pass
+                else:
+                    sys.exit(1)
 
         if r.status_code != 200:
             print("END OF PAGE INDEX LOOP")
@@ -186,7 +199,21 @@ def get_detail_issue(book_id):
     url = config["urls"]["book"] + str(book_id).strip()
     print("**** PROCESS", url)
 
-    r = requests.get(url)
+    retry = True
+    n_tries = 0
+
+    while retry is True:
+        try:
+            r = requests.get(url)
+            retry = False
+        except:
+            n_tries = n_tries + 1
+            print(f"ERROR, retry {n_tries}")
+            if n_tries < 10:
+                pass
+            else:
+                print("TOO MANY RETRIES. ABORT.")
+                sys.exit(1)
 
     if r.status_code != 200:
         print(f"ERR: page {url} cannot be read.")
@@ -199,7 +226,12 @@ def get_detail_issue(book_id):
 
         for level1 in bsObj.findAll("a", {"class": re.compile("Download btn*")}):
             tmp_data = level1.attrs["href"]
-            book_download_link = config["urls"]["book"] + tmp_data
+
+            if "drive.google.com" in tmp_data:
+                book_download_link = tmp_data
+            else:
+                book_download_link = config["urls"]["book"] + tmp_data[1:]
+
             print("   ", book_download_link)
             dict_issues[book_id] = {
                 "book_download_link": book_download_link
@@ -281,11 +313,21 @@ def read_book_detail_page():
  
     file.close()
 
+    out_path = create_link("links")   
+
     for i in dict_data:
         url_issue = dict_data[i]["book_link"]
         book_id = dict_data[i]["id"]
         get_detail_issue(book_id)
+
+    with out_path.open(mode="w") as file:
+        for d in dict_issues:
+            tmp_link = dict_issues[d]["book_link"]
+            if tmp_link>'':
+                file.write(tmp_link+"\n")
     
+    file.close()
+
 
 def read_issues_links(letter, path):
     global config
