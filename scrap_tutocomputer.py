@@ -1,19 +1,33 @@
 '''
-    Scrap libribook web site for programming IT books and their details.
+    Scrap tutocomputer web site for programming IT books and their details.
 
-    1. Read root url for computing books
-    2. Get the max page number available
-    3. Loop thru index pages to get book pages links
-    3. Each link goes to a new page, the download book one (computed, one step less)
-    4. Each download button has a file link in two possible forms, and ID or a complete URL to Google Drive
-    5. Build a complete list of file links
-    5. Done
+    1. Index
+        This site has several categories, from Cobol to Autocad. Each cateogry has a lot of books
+        in a list, with no pagination at all (easier!). So, frist step, read the categories and their
+        direct links:
 
-    After that, you can use aria2c to get all available files
+        element ASIDE with class="sidebar" contents the category list
+            LI element
+                A element has the HREF info to get the category index list
+
+        Inside any category:
+
+            H2 class="post-title"
+                A HREF has a link like
+                    ./programming/19-cobol-21-days.html
+                                  --
+                                  ^
+                                  this is the unique ID for each book
+            
+            the download link has the form:
+                https://tuto-computer.com/download-file-19.html
+                                                        __
+                                                        ^
+                                                        so, we must build the link from the unique ID
 
     Prior to execution you must create a couple of folders in your Home directory:
-        scraps/libribooks/data
-        scraps/libribooks/links
+        scraps/tuto-computer/data
+        scraps/tuto-computer/links
 
     Libraries used:
         Beautifulsoup
@@ -41,19 +55,19 @@ from argparse import ArgumentParser
 
 config = {
     "urls": {
-        "root": "https://libribook.com",
-        "base": "https://libribook.com/category/programming-it",
-        "book": "https://libribook.com/get1/"
+        "root": "https://tuto-computer.com",
+        "base": "https://tuto-computer.com/category/programming-it",
+        "book": "https://tuto-computer.com/get1/"
         },
     "url_page_suffix": "?page=",
-    "json_path_prefix": pathlib.Path.home() / "scraps/libribook/data/",
+    "json_path_prefix": pathlib.Path.home() / "scraps/tuto-computer/data/",
     "json_prefix": "json_",
     "json_suffix": ".json",
     "json_files": {
         "index": "index_",
         "issues": "issues_",
     },
-    "link_path_prefix": pathlib.Path.home() / "scraps/libribook/links/",
+    "link_path_prefix": pathlib.Path.home() / "scraps/tuto-computer/links/",
     "link_prefix": "link_",
     "link_suffix": ".txt",
     "link_files": {
@@ -113,10 +127,12 @@ def create_link(file):
         print("ERR: Cannot create an instance of file path!", path)
         sys.exit(1)
 
-def read_index_page(path):
+def read_index_page():
     global config
+    global list_links
 
-    max_page = 0
+    category_link = ''
+    list_links = []
 
     url = config["urls"]["base"]
 
@@ -128,83 +144,11 @@ def read_index_page(path):
     else:
         html = r.content
         bsObj = bs(html, "lxml")
-
-        for level1 in bsObj.findAll("li", {"class": "PagedList-skipToLast"}):
-            for level2 in level1.findAll("a"):
-                tmp_data = level2.attrs["href"].split("=")
-                try:
-                    max_page = int(tmp_data[1])
-                except:
-                    print("CANNOT READ MAX PAGE!")
-                    sys.exit(1)
-
-    list_links = []
-    list_data = []
-    dict_data = {}
-
-    for i in range(1, max_page + 1):
-        url_page = url + "?page=" + str(i).strip()
-        print(url_page)
-        print("-" * 80)
-        
-        retry = True
-        n_tries = 0
-
-        while retry is True:
-            try:
-                r = requests.get(url, params={'page':str(i).strip()})
-                retry = False
-            except:
-                print(f"ERROR GETTING URL. Retry {n_tries}")
-                if n_tries < 10:
-                    pass
-                else:
-                    sys.exit(1)
-
-        if r.status_code != 200:
-            print("END OF PAGE INDEX LOOP")
-        else:
-            html = r.content
-            bsObj = bs(html, "lxml")
-
-            for level1 in bsObj.findAll("div", {"class": "content"}):
-                book_title = ''
-                book_link = ''
-                book_id = ''
-                for level2 in level1.findAll("h4"):
-                    for level3 in level2.findAll("a"):
-                        book_title = level3.get_text()
-                        book_link = level3.attrs["href"]
-                        tmp_data = book_link.split("/")
-                        book_id = tmp_data[2]
-
-                print(f"Page {i} - {book_id} - {book_title}")
-
-                dict_data[book_id] = {
-                    "id": book_id,
-                    "book_link": book_link,
-                    "book_title": book_title,
-                    }
-
-
- 
-    print(f"SAVING DATA...")
-    
-    with path.open(mode="w", encoding="utf-8") as file:
-        json.dump(dict_data, file)
-    
-    file.close()
-
-def read_number_page():
-    global config
-    global thread
-
-    path = create_csv("index")
-    read_index_page(path)
-
-def get_index_data():
-
-    read_number_page()
+        for level1 in bsObj.findAll("aside", {"class": "sidebar"}):
+            for level2 in level1.findAll("li"):
+                for level3 in level2.findAll("a"):
+                    category_link = level3.attrs["href"]
+                    list_links.append(category_link)
 
 def get_detail_issue(book_id):
     global config
@@ -322,7 +266,7 @@ def main():
     records_processed = 0
 
     if fase == 0:
-        get_index_data()
+        read_index_page()
     if fase == 1:
         read_book_detail_page()
 
