@@ -251,7 +251,6 @@ def get_detail_issue(book_id):
                 "book_download_link": book_download_link
             }
 
-
 def read_book_detail_page():
     global config
     global records_processed
@@ -275,7 +274,7 @@ def read_book_detail_page():
 
     with out_path.open(mode="w") as file:
         for d in dict_issues:
-            tmp_link = dict_issues[d]["book_link"]
+            tmp_link = dict_issues[d]["book_download_link"]
             if tmp_link>'':
                 file.write(tmp_link+"\n")
     
@@ -312,7 +311,7 @@ def main():
     global fase
     global records_processed
 
-    print("Scrap whakoom site")
+    print("Scrap libribook site")
     check_args()
 
     if check_paths() is False:
@@ -325,6 +324,7 @@ def main():
         get_index_data()
     if fase == 1:
         read_book_detail_page()
+
 
 
 
