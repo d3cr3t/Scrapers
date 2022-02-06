@@ -1,5 +1,13 @@
 '''
     Scrap libribook web site for programming IT books and their details.
+
+    Go to your home root directory and create this folders struct:
+
+    /scraps/
+        libribook/
+            data
+            links
+
 '''
 
 
@@ -35,7 +43,6 @@ config = {
     "link_prefix": "link_",
     "link_suffix": ".txt",
     "link_files": {
-        "images": "images_",
         "links": "links_"
     }
  }
@@ -49,19 +56,12 @@ def check_args():
     # Args
     parser = ArgumentParser()
 
-    parser.add_argument("-f", "--fase", dest="fase", default=0, help="fase 0: init, fase 1: details, fase 2: image links")
-    parser.add_argument("-t", "--thread", dest="thread", default=0, type=int, help="0: complete, 1-5: sector to process (from 1 to c...)")
+    parser.add_argument("-f", "--fase", dest="fase", default=0, help="fase 0: init, fase 1: details")
 
     args = parser.parse_args()
     fase = int(args.fase)
-    if args.thread <0 or args.thread>5:
-        print("ERR", "-t parameter must be 0 to 5.")
-        sys.exit(1)
-    else:
-        thread = args.thread
     
-
-    if fase <0 or fase>2:
+    if fase <0 or fase>1:
         print("ERR: fase must be a value between 0 and 1.")
         sys.exit(1)
 
@@ -237,68 +237,6 @@ def get_detail_issue(book_id):
                 "book_download_link": book_download_link
             }
 
-def get_series_issues(dict):
-    global config
-    global records_processed
-
-    edition_type = ''
-    about_this_edition = ''
-    story = ''
-
-    issue_error = False
-    id_serie = dict["id"]
-
-    url = config["urls"]["root"] + dict["link_detail"]   # not detail of issue, instead, of complete serie
-    r = requests.get(url)
-
-    if r.status_code != 200:
-        print(f"ERR: page {url} cannot be read.")
-        issue_error = True
-    else:
-        print("Processing serie (about)", dict["title_issue"], "for", dict["issues_by_serie"], "issues")
-        story = ''
-        about_this_edition = ''
-        html = r.content
-        bsObj = bs(html, "lxml")
-        for level1 in bsObj.findAll("h2", {"class": "about-edition"}):
-            level2 = level1.findNext("p")
-            if level2:
-                about_this_edition = level2.get_text()
-
-        for level1 in bsObj.findAll("div", {"class": "wiki-text"}):
-            for level2 in level1.findAll("p"):
-                story = story + level2.get_text() + "\n"
-
-    url = config["urls"]["root"] + dict["link_detail"] + "/todos"   # not detail of issue, instead, of complete serie
-    r = requests.get(url)
-
-    if r.status_code != 200:
-        print(f"ERR: page {url} cannot be read.")
-        issue_error = True
-    else:
-        print("Processing serie", dict["title_issue"], "for", dict["issues_by_serie"], "issues")
-        edition_type = ''
-        html = r.content
-        bsObj = bs(html, "lxml")
-        for level1 in bsObj.findAll("p", {"class": "edition-type"}):
-            edition_type = level1.get_text()
-        for level1 in bsObj.findAll("ul", {"class": re.compile("auto-rows")}):
-            for level2 in level1.findAll("a"):
-                print("***", level2.attrs["href"])
-                get_detail_issue(level2.attrs["href"], edition_type, about_this_edition, story, id_serie)
-                records_processed = records_processed+1
-
-    if issue_error is True:
-        return {"id": "ERR"}
-    else:
-        return {"id": dict["id"],
-                "title_serie": dict["title_issue"], 
-                "issues_by_serie": dict["issues_by_serie"], 
-                "edition_type": edition_type,
-                "about_this_edition": about_this_edition,
-                "story": story,
-                }
-
 def read_book_detail_page():
     global config
     global records_processed
@@ -322,7 +260,7 @@ def read_book_detail_page():
 
     with out_path.open(mode="w") as file:
         for d in dict_issues:
-            tmp_link = dict_issues[d]["book_link"]
+            tmp_link = dict_issues[d]["book_download_link"]
             if tmp_link>'':
                 file.write(tmp_link+"\n")
     
@@ -353,21 +291,13 @@ def read_issues_links(letter, path):
     
     file.close()
 
-def extract_image_links():
-    global config
-
-    letters_chunk = config["url_letters_all"] if thread==0 else config["url_letters"][thread-1]
-
-    for letter in letters_chunk:
-        path = create_link("images", letter)
-        read_issues_links(letter, path)
 
 def main():
     global config
     global fase
     global records_processed
 
-    print("Scrap whakoom site")
+    print("Scrap libribook site")
     check_args()
 
     if check_paths() is False:
@@ -380,8 +310,6 @@ def main():
         get_index_data()
     if fase == 1:
         read_book_detail_page()
-    if fase == 2:
-        extract_image_links()
 
 
 
