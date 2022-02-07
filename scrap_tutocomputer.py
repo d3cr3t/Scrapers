@@ -55,7 +55,7 @@ from argparse import ArgumentParser
 
 config = {
     "urls": {
-        "root": "https://tuto-computer.com",
+        "root": "https://tuto-computer.com/",
         "base": "https://tuto-computer.com/category/programming-it",
         "book": "https://tuto-computer.com/get1/"
         },
@@ -134,12 +134,16 @@ def read_index_page():
     category_link = ''
     list_links = []
 
-    url = config["urls"]["base"]
+    url = config["urls"]["root"]
+    print(url)
 
-    r = requests.get(url)
+    session = requests.Session()
+    headers = {'User-Agent':'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:23.0) Gecko/20100101 Firefox/23.0'}
+    r = session.get(url, headers=headers) # verify=False) #get the response
 
     if r.status_code != 200:
-        print("URL NOT FOUND!")
+        print("URL NOT FOUND!", r.status_code)
+        pprint.pprint(r)
         sys.exit(1)
     else:
         html = r.content
@@ -149,6 +153,7 @@ def read_index_page():
                 for level3 in level2.findAll("a"):
                     category_link = level3.attrs["href"]
                     list_links.append(category_link)
+
 
 def get_detail_issue(book_id):
     global config
@@ -200,28 +205,64 @@ def read_book_detail_page():
     global config
     global records_processed
     global dict_issues
-
+    global list_links
+    
+    list_books = []
     dict_data = {}
 
-    in_path = config["json_path_prefix"] / (config["json_prefix"] + config["json_files"]["index"] + config["json_suffix"])
-     
-    with in_path.open(mode="r") as file:
-        dict_data = json.loads(file.read())
- 
-    file.close()
+    retry = True
+    n_tries = 0
+
+    session = requests.Session()
+    headers = {'User-Agent':'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:23.0) Gecko/20100101 Firefox/23.0'}
 
     out_path = create_link("links")   
 
-    for i in dict_data:
-        url_issue = dict_data[i]["book_link"]
-        book_id = dict_data[i]["id"]
-        get_detail_issue(book_id)
+    for i in list_links:
+        print("URL", i)
+        '''
+                H2 class="post-title"
+                A HREF has a link like
+                    ./programming/19-cobol-21-days.html
+                                  --
+                                  ^
+                                  this is the unique ID for each book
+        '''
+        n_tries = 0
+        retry = True
+        while retry is True:
+            url = config["urls"]["root"] + i[2:]
+            print(url, "<<<<<<<")
+            try:
+                r = session.get(url, headers=headers) # verify=False) #get the response
+                retry = False
+            except:
+                n_tries = n_tries + 1
+                print(f"ERROR, retry {n_tries}")
+                if n_tries < 10:
+                    pass
+                else:
+                    print("TOO MANY RETRIES. ABORT.")
+                    sys.exit(1)
+
+        if r.status_code != 200:
+            print(f"ERR: page {url} cannot be read.")
+        else:
+            print("Processing issue... looking for Download button...")
+            html = r.content
+            bsObj = bs(html, "lxml")
+            for level1 in bsObj.findAll("h2", {"class": "post-title"}):
+                for level2 in level1.findAll("a"):
+                    # ./programming/19-cobol-21-days.html
+                    tmp_data = level2.attrs["href"].split("/")
+                    tmp_data2 = tmp_data[2].split("-")
+                    url_issue = config["urls"]["root"] + "/download-file-" + str(tmp_data2[0]) + ".html"
+                    print(url_issue)
+                    list_books.append(url_issue)
 
     with out_path.open(mode="w") as file:
-        for d in dict_issues:
-            tmp_link = dict_issues[d]["book_link"]
-            if tmp_link>'':
-                file.write(tmp_link+"\n")
+        for i in list_books:
+            file.write(i+"\n")
     
     file.close()
 
@@ -255,8 +296,9 @@ def main():
     global config
     global fase
     global records_processed
+    global list_links
 
-    print("Scrap whakoom site")
+    print("Scrap tuto-computer site")
     check_args()
 
     if check_paths() is False:
@@ -267,7 +309,6 @@ def main():
 
     if fase == 0:
         read_index_page()
-    if fase == 1:
         read_book_detail_page()
 
 
